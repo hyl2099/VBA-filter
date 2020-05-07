@@ -1,0 +1,81 @@
+Sub filter()
+    Dim file_workbook, range
+    
+    'open file
+    Dim fileOpen As FileDialog
+    Set fileOpen = Application.FileDialog(msoFileDialogFilePicker)
+    With fileOpen
+        .InitialFileName = ThisWorkbook.Path
+        If .Show = -1 Then
+            file_name = .SelectedItems(1)
+        Else
+            Exit Sub
+        End If
+    End With
+    Set fileOpen = Nothing
+    Set file_workbook = Workbooks.Open(file_name)
+    Set range = file_workbook.Sheets(1).UsedRange
+    
+    
+    
+    ThisWorkbook.Sheets(2).UsedRange.Clear
+    '选取需要的3列
+    For col = 1 To range.Columns.Count
+        If range.Cells(1, col) = "Device Name 1" Then
+            range.Cells(1, col).Select
+            Columns(ActiveCell.Column).Select
+            Columns(ActiveCell.Column).Copy
+            ThisWorkbook.Sheets(2).range("A1").PasteSpecial xlPasteValuesAndNumberFormats
+        End If
+        If range.Cells(1, col) = "Port Name 1" Then
+            range.Cells(1, col).Select
+            Columns(ActiveCell.Column).Select
+            Columns(ActiveCell.Column).Copy
+            ThisWorkbook.Sheets(2).range("B1").PasteSpecial xlPasteValuesAndNumberFormats
+        End If
+        If range.Cells(1, col) = "VLAN" Then
+            range.Cells(1, col).Select
+            Columns(ActiveCell.Column).Select
+            Columns(ActiveCell.Column).Copy
+            ThisWorkbook.Sheets(2).range("C1").PasteSpecial xlPasteValuesAndNumberFormats
+        End If
+    Next
+    
+    'clear
+    ThisWorkbook.Sheets(1).UsedRange.Clear
+    sheet1Row = 1
+    
+    
+    '字典
+    Set dic = CreateObject("Scripting.Dictionary")
+    new_last_row = ThisWorkbook.Sheets(2).UsedRange.Rows.Count
+    For curRow = 2 To new_last_row
+        namePort = ThisWorkbook.Sheets(2).Cells(curRow, 1).Value & ThisWorkbook.Sheets(2).Cells(curRow, 2).Value
+        vlan = ThisWorkbook.Sheets(2).Cells(curRow, 3)
+        
+        If dic.Exists(namePort) Then
+            existVlan = dic.Item(namePort)
+            split_char = "-"
+            split_results = Split(existVlan, split_char, -1)
+            flag = 0
+            For r = LBound(split_results) To UBound(split_results)
+                'Debug.Print (split_results(r))
+                If split_results(r) = vlan Then
+                flag = flag + 1
+                End If
+            Next
+            
+            If flag <> 0 Then
+                ThisWorkbook.Sheets(2).range(Cells(curRow, 1).Address & ":" & Cells(curRow, 3).Address).Copy
+                ThisWorkbook.Sheets(1).range(Cells(sheet1Row, 1).Address & ":" & Cells(sheet1Row, 3).Address).PasteSpecial xlPasteValuesAndNumberFormats
+                sheet1Row = sheet1Row + 1
+            Else
+                dic.Item(namePort) = existVlan + "-" + vlan
+            End If
+        Else
+            dic.Item(namePort) = vlan
+        End If
+    Next
+    ThisWorkbook.Sheets(2).UsedRange.Clear
+    ThisWorkbook.Sheets(1).Activate
+End Sub
